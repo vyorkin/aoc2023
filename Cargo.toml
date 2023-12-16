@@ -1,0 +1,47 @@
+[workspace]
+resolver = "2"
+
+members = ["day-*", "scratch"]
+default-members = ["day-*"]
+
+[workspace.dependencies]
+# error handling
+thiserror = "1.0"
+miette = { version = "5.10.0", features = ["fancy"] }
+# tracing & logging
+tracing = "0.1"
+tracing-log = "0.2"
+tracing-subscriber = { version = "0.3", features = ["fmt", "registry", "env-filter"] }
+# parsing
+nom = "7.1"
+nom_locate = "4.2"
+nom-supreme = "0.8"
+# algo
+glam = "0.24"
+itertools = "0.12"
+petgraph = "0.6"
+# testing
+rstest = "0.18"
+rstest_reuse = "0.6"
+test-log = { version = "0.2", default-features = false, features = ["trace"] }
+# benchmarking & profiling
+divan = "0.1"
+criterion = { version = "0.5", features = ["html_reports"] }
+dhat = "0.3"
+# cli
+indicatif = { version = "0.17", features = ["rayon"] }
+
+[profile.flamegraph]
+inherits = "release"
+debug = 2 # full debug info, like in "dev" profile
+
+[profile.dhat]
+inherits = "release"
+debug = 1 # debug info without type or variable level info
+
+[profile.wasm-release]
+inherits = "release"
+opt-level = 'z' # optimize for binary size, turn off loop vectorization
+lto = true # fat link time optimizations: optmize across all crates within the dependency graph
+codegen-units = 1 # don't split into a code generation units
+panic ="abort"
