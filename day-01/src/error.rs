@@ -12,5 +12,10 @@ pub enum AocError {
     NoCalibrationValue(String),
 
     #[error("cannot parse `{0} as number")]
+    #[diagnostic(code(aoc::cannot_parse_as_number))]
     CannotParseAsNumber(String),
+
+    #[error("parsing error")]
+    #[diagnostic(code(aoc::parsing_error))]
+    ParsingError,
 }
