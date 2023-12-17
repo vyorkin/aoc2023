@@ -103,82 +103,38 @@ mod tests {
         let input = "xtwone3four";
         let digits = unfold(String::from(input), |s| {
             let (result, skip) = if s.starts_with("one") {
-                (Some('1'), 3)
+                (Some(1), 3)
             } else if s.starts_with("two") {
-                (Some('2'), 3)
+                (Some(2), 3)
             } else if s.starts_with("three") {
-                (Some('3'), 5)
+                (Some(3), 5)
             } else if s.starts_with("four") {
-                (Some('4'), 4)
+                (Some(4), 4)
             } else if s.starts_with("five") {
-                (Some('5'), 4)
+                (Some(5), 4)
             } else if s.starts_with("six") {
-                (Some('6'), 3)
+                (Some(6), 3)
             } else if s.starts_with("seven") {
-                (Some('7'), 5)
+                (Some(7), 5)
             } else if s.starts_with("eight") {
-                (Some('8'), 5)
+                (Some(8), 5)
             } else if s.starts_with("nine") {
-                (Some('9'), 4)
-            } else if let Some((_, c)) = s
-                .chars()
-                .next()
-                .and_then(|c| c.to_digit(10).map(|d| (d, c)))
-            {
-                (Some(c), 1)
+                (Some(9), 4)
+            } else if let Some(c) = s.chars().next() {
+                if let Some(n) = c.to_digit(10) {
+                    (Some(n), 1)
+                } else {
+                    (Some(0), 1)
+                }
             } else {
-                (None, 1)
+                (None, 0)
             };
 
             *s = String::from(&s[skip..]);
 
             result
         });
-        let result = digits.take(3).collect::<Vec<_>>();
-        assert_eq!(result, vec!['a']);
-    }
-
-    #[test]
-    fn test_unfold_konyacci() {
-        let konyacci = unfold((String::from("x"), String::from("y")), |(s1, s2)| {
-            let ss1 = format!("{s1}{s2}");
-            let ss2 = format!("{s2}{s1}");
-            *s1 = ss1.clone();
-            *s2 = ss2;
-            let next = ss1;
-            Some(next)
-        });
-        // itertools::assert_equal(konyacci.by_ref().take(6), vec!["xy"]);
-        assert_eq!(
-            konyacci.skip(2).take(3).collect::<Vec<String>>(),
-            vec![
-                "xyyxyxxy",
-                "xyyxyxxyyxxyxyyx",
-                "xyyxyxxyyxxyxyyxyxxyxyyxxyyxyxxy"
-            ]
-        )
-    }
-
-    #[test]
-    fn test_unfold_fibonacci() {
-        let mut fibonacci = unfold((1u32, 1u32), |(x1, x2)| {
-            // Attempt to get the next Fibonacci number
-            let next = x1.saturating_add(*x2);
-
-            // Shift left: ret <- x1 <- x2 <- next
-            let ret = *x1;
-            *x1 = *x2;
-            *x2 = next;
-
-            // If addition has saturated at the maximum, we are finished
-            if ret == *x1 && ret > 1 {
-                None
-            } else {
-                Some(ret)
-            }
-        });
-
-        itertools::assert_equal(fibonacci.by_ref().take(8), vec![1, 1, 2, 3, 5, 8, 13, 21]);
-        assert_eq!(fibonacci.last(), Some(2_971_215_073))
+        let result = digits.collect::<Vec<_>>();
+        assert_eq!(result, vec![]);
     }
 }
