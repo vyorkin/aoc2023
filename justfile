@@ -1,3 +1,6 @@
+scratch:
+    cargo watch -w scratch -x "check -p scratch" -s "cargo nextest run -p scratch" -s "just lint scratch"
+
 # Use `just work day-01 part1` to work on the specific binary for a specific day's problems
 work day part:
     cargo watch -w {{day}} -x "check -p {{day}}" -s "just test {{day}} {{part}}" -s "just lint {{day}}" -s "just bench {{day}} {{part}}"

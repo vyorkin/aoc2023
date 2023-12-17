@@ -1,3 +1,5 @@
+#![allow(dead_code)]
+
 use miette::{miette, Context, Diagnostic, IntoDiagnostic, LabeledSpan, SourceSpan};
 use semver::Version;
 use thiserror::Error;
@@ -66,7 +68,7 @@ fn print_report() {
     println!("{:?}", report)
 }
 
-fn main() -> miette::Result<()> {
+fn demo_miette() {
     // print_report();
 
     // just_fail().wrap_err("you are zhostko naebalsya")?;
@@ -78,15 +80,43 @@ fn main() -> miette::Result<()> {
     //     .parse()
     //     .into_diagnostic()
     //     .wrap_err("Failed to parse semver version")?;
+}
 
-    let data = include_str!("./data.txt");
-    dbg!(data);
+fn demo_include_str() {
+    // let data = include_str!("./data.txt");
+    // dbg!(data);
+}
+
+fn main() -> miette::Result<()> {
+    // demo_miette();
+    // demo_include_str();
 
     Ok(())
 }
 
 #[cfg(test)]
 mod tests {
+    use itertools::unfold;
+
     #[test]
-    fn test_part1() {}
+    fn test_from_fn() {
+        let mut count = 0;
+        let counter = std::iter::from_fn(move || {
+            // Increment our count. This is why we started at zero.
+            count += 1;
+
+            // Check to see if we've finished counting or not.
+            if count < 6 {
+                Some(count)
+            } else {
+                None
+            }
+        });
+        assert_eq!(counter.collect::<Vec<_>>(), &[1, 2, 3, 4, 5]);
+    }
+
+    #[test]
+    fn test_from_fn_digits() {
+        let input = "xtwone3four";
+    }
 }
