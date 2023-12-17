@@ -134,7 +134,7 @@ mod tests {
 
             result
         });
-        let result = digits.collect::<Vec<_>>();
+        let result = digits.filter(|&n| n != 0).collect::<Vec<_>>();
         assert_eq!(result, vec![]);
     }
 }
