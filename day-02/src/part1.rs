@@ -12,11 +12,11 @@ enum Color {
 #[derive(Debug, PartialEq, Clone)]
 struct Game {
     id: u32,
-    rounds: Vec<(u32, Color)>,
+    rounds: Vec<Vec<(u32, Color)>>,
 }
 
 impl Game {
-    pub fn new(id: u32, rounds: Vec<(u32, Color)>) -> Self {
+    pub fn new(id: u32, rounds: Vec<Vec<(u32, Color)>>) -> Self {
         Self { id, rounds }
     }
 }
@@ -49,12 +49,7 @@ mod parser {
         let game_id = delimited(tag("Game "), u32, tag(": "));
         let game = tuple((game_id, game_round));
 
-        map_res(game, |(id, rounds)| {
-            Ok::<Game, ()>(Game::new(
-                id,
-                rounds.into_iter().flatten().collect::<Vec<_>>(),
-            ))
-        })(input)
+        map_res(game, |(id, rounds)| Ok::<Game, ()>(Game::new(id, rounds)))(input)
     }
 }
 
@@ -78,7 +73,7 @@ pub fn process(input: &str) -> miette::Result<String, AocError> {
     let sum = games
         .iter()
         .filter(|game| {
-            game.rounds.iter().all(|&(n, color)| match color {
+            game.rounds.iter().flatten().all(|&(n, color)| match color {
                 Color::Red => n <= red,
                 Color::Green => n <= green,
                 Color::Blue => n <= blue,
@@ -103,14 +98,9 @@ mod tests {
         let expected = Game::new(
             13,
             vec![
-                (7, Color::Blue),
-                (8, Color::Red),
-                (5, Color::Green),
-                (15, Color::Blue),
-                (2, Color::Red),
-                (7, Color::Green),
-                (3, Color::Blue),
-                (12, Color::Red),
+                vec![(7, Color::Blue), (8, Color::Red)],
+                vec![(5, Color::Green), (15, Color::Blue), (2, Color::Red)],
+                vec![(7, Color::Green), (3, Color::Blue), (12, Color::Red)],
             ],
         );
         let (_, game) = parser::parse_game(input).into_diagnostic()?;
