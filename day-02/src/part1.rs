@@ -1,5 +1,3 @@
-use itertools::Itertools;
-
 use crate::error::AocError;
 
 #[derive(Debug, PartialEq, Clone, Copy)]
@@ -43,8 +41,7 @@ mod parser {
         ));
 
         let colored_cubes = tuple((u32, preceded(space0, color)));
-        let comma = tag(", ");
-        let colored_cubes_list = separated_list1(comma, colored_cubes);
+        let colored_cubes_list = separated_list1(tag(", "), colored_cubes);
         let game_round = separated_list1(tag("; "), colored_cubes_list);
         let game_id = delimited(tag("Game "), u32, tag(": "));
         let game = tuple((game_id, game_round));
@@ -55,11 +52,15 @@ mod parser {
 
 #[tracing::instrument]
 pub fn process(input: &str) -> miette::Result<String, AocError> {
-    // let cubes = ((Color::Red, 12), (Color::Green, 13), (Color::Blue, 14));
+    let (red, green, blue) = (12, 13, 14);
 
-    let red = 12;
-    let green = 13;
-    let blue = 14;
+    let is_possible_game = |game: &Game| -> bool {
+        game.rounds.iter().flatten().all(|&(n, color)| match color {
+            Color::Red => n <= red,
+            Color::Green => n <= green,
+            Color::Blue => n <= blue,
+        })
+    };
 
     let games = input
         .lines()
@@ -71,14 +72,8 @@ pub fn process(input: &str) -> miette::Result<String, AocError> {
         .collect::<Result<Vec<Game>, _>>()?;
 
     let sum = games
-        .iter()
-        .filter(|game| {
-            game.rounds.iter().flatten().all(|&(n, color)| match color {
-                Color::Red => n <= red,
-                Color::Green => n <= green,
-                Color::Blue => n <= blue,
-            })
-        })
+        .into_iter()
+        .filter(is_possible_game)
         .map(|game| game.id)
         .sum::<u32>();
 
@@ -88,7 +83,6 @@ pub fn process(input: &str) -> miette::Result<String, AocError> {
 #[cfg(test)]
 mod tests {
     use miette::IntoDiagnostic;
-    use rstest::rstest;
 
     use super::*;
 
