@@ -40,7 +40,7 @@ mod parser {
         IResult,
     };
 
-    pub fn parse_game(input: &str) -> IResult<&str, Game, ()> {
+    fn game(input: &str) -> IResult<&str, Game, ()> {
         // Game 13: 7 blue, 8 red; 5 green, 15 blue, 2 red; 7 green, 3 blue, 12 red
 
         let color = alt((
@@ -57,6 +57,12 @@ mod parser {
 
         map_res(game, |(id, rounds)| Ok::<Game, ()>(Game::new(id, rounds)))(input)
     }
+
+    pub fn parse_game(input: &str) -> Result<Game, AocError> {
+        game(input)
+            .map(|x| x.1)
+            .map_err(|_| AocError::ParseGameError(input.to_string()))
+    }
 }
 
 #[tracing::instrument]
@@ -65,11 +71,7 @@ pub fn process(input: &str) -> miette::Result<String, AocError> {
 
     let games = input
         .lines()
-        .map(|line| {
-            parser::parse_game(line)
-                .map(|x| x.1)
-                .map_err(|_| AocError::ParseGameError(line.to_string()))
-        })
+        .map(parser::parse_game)
         .collect::<Result<Vec<Game>, _>>()?;
 
     let sum = games
@@ -83,8 +85,6 @@ pub fn process(input: &str) -> miette::Result<String, AocError> {
 
 #[cfg(test)]
 mod tests {
-    use miette::IntoDiagnostic;
-
     use super::*;
 
     #[test]
@@ -98,7 +98,7 @@ mod tests {
                 vec![(7, Color::Green), (3, Color::Blue), (12, Color::Red)],
             ],
         );
-        let (_, game) = parser::parse_game(input).into_diagnostic()?;
+        let game = parser::parse_game(input)?;
         assert_eq!(game, expected);
 
         Ok(())
