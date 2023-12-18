@@ -96,9 +96,80 @@ fn main() -> miette::Result<()> {
 
 #[cfg(test)]
 mod tests {
+    use super::*;
     use itertools::unfold;
+    use nom::{
+        branch::alt,
+        bytes::complete::tag,
+        character::complete::{digit1, space0, u32},
+        combinator::{map_res, value},
+        multi::{many1, separated_list1},
+        sequence::{delimited, preceded, terminated, tuple},
+        IResult,
+    };
 
     #[test]
+    #[ignore]
+    fn test_nom_many_n_m() {}
+
+    #[derive(Debug, PartialEq, Clone)]
+    enum Color {
+        Red,
+        Green,
+        Blue,
+    }
+
+    #[test]
+    fn test_parse_rgb_color() -> miette::Result<()> {
+        let input = "7 blue, 8 red; 5 green, 15 blue, 2 red; 7 green, 3 blue, 12 red";
+
+        fn parse_color(input: &str) -> IResult<&str, &str> {
+            tag("red")(input)
+        }
+
+        let color_parser = alt((
+            value(Color::Red, tag::<&str, &str, ()>("red")),
+            value(Color::Green, tag::<&str, &str, ()>("green")),
+            value(Color::Blue, tag::<&str, &str, ()>("blue")),
+        ));
+
+        let colored_cubes = tuple((u32, preceded(space0, color_parser)));
+        let comma = tag(", ");
+        let cubes_list = separated_list1(comma, colored_cubes);
+        let mut round_parser = separated_list1(tag("; "), cubes_list);
+
+        let (remaining, cubes) = round_parser(input).into_diagnostic()?;
+
+        assert_eq!(
+            cubes,
+            vec![
+                vec![(7, Color::Blue), (8, Color::Red)],
+                vec![(5, Color::Green), (15, Color::Blue), (2, Color::Red)],
+                vec![(7, Color::Green), (3, Color::Blue), (12, Color::Red)]
+            ]
+        );
+
+        Ok(())
+    }
+
+    #[test]
+    fn test_elve_game() -> miette::Result<()> {
+        let input = "Game 13: 7 blue, 8 red; 5 green, 15 blue, 2 red; 7 green, 3 blue, 12 red";
+
+        let (remaining, game_id) = map_res(
+            delimited(tag("Game "), digit1::<&str, ()>, tag(": ")),
+            |s: &str| s.parse::<u32>(),
+        )(input)
+        .into_diagnostic()
+        .wrap_err("Unable to parse game")?;
+
+        assert_eq!(game_id, 13);
+
+        Ok(())
+    }
+
+    #[test]
+    #[ignore]
     fn test_unfold_digit_names() {
         let input = "xtwone3four";
         let digits = unfold(String::from(input), |s| {

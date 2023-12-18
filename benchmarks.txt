@@ -1,5 +1,29 @@
 
+running 8 tests
+iiiiiiii
+test result: ok. 0 passed; 0 failed; 8 ignored; 0 measured; 0 filtered out; finished in 0.00s
+
+
 running 0 tests
 
 test result: ok. 0 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.00s
+
+
+running 0 tests
+
+test result: ok. 0 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.00s
+
+day_01_bench  fastest       │ slowest       │ median        │ mean          │ samples │ iters
+├─ part1      157.2 µs      │ 243.4 µs      │ 180.5 µs      │ 179.1 µs      │ 100     │ 100
+╰─ part2      454 µs        │ 833.4 µs      │ 518.2 µs      │ 549.3 µs      │ 100     │ 100
+
+day_01::part1/part1     time:   [88.128 µs 88.460 µs 88.844 µs]
+Found 15 outliers among 100 measurements (15.00%)
+  12 (12.00%) high mild
+  3 (3.00%) high severe
+
+day_01::part2/part2     time:   [434.58 µs 435.10 µs 435.68 µs]
+Found 11 outliers among 100 measurements (11.00%)
+  6 (6.00%) high mild
+  5 (5.00%) high severe
 
