@@ -10,4 +10,8 @@ pub enum AocError {
     #[error("cannot parse `{0}` as number")]
     #[diagnostic(code(aoc::cannot_parse_as_number))]
     CannotParseAsNumber(String),
+
+    #[error("cannot parse `{0}` as Game")]
+    #[diagnostic(code(aoc::parser_game_error))]
+    ParseGameError(String),
 }

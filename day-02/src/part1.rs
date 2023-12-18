@@ -1,6 +1,8 @@
+use itertools::Itertools;
+
 use crate::error::AocError;
 
-#[derive(Debug, PartialEq, Clone)]
+#[derive(Debug, PartialEq, Clone, Copy)]
 enum Color {
     Red,
     Green,
@@ -10,11 +12,11 @@ enum Color {
 #[derive(Debug, PartialEq, Clone)]
 struct Game {
     id: u32,
-    rounds: Vec<Vec<(u32, Color)>>,
+    rounds: Vec<(u32, Color)>,
 }
 
 impl Game {
-    pub fn new(id: u32, rounds: Vec<Vec<(u32, Color)>>) -> Self {
+    pub fn new(id: u32, rounds: Vec<(u32, Color)>) -> Self {
         Self { id, rounds }
     }
 }
@@ -46,13 +48,46 @@ mod parser {
         let game_round = separated_list1(tag("; "), colored_cubes_list);
         let game_id = delimited(tag("Game "), u32, tag(": "));
         let game = tuple((game_id, game_round));
-        map_res(game, |(id, rounds)| Ok::<Game, ()>(Game::new(id, rounds)))(input)
+
+        map_res(game, |(id, rounds)| {
+            Ok::<Game, ()>(Game::new(
+                id,
+                rounds.into_iter().flatten().collect::<Vec<_>>(),
+            ))
+        })(input)
     }
 }
 
 #[tracing::instrument]
-pub fn process(_input: &str) -> miette::Result<String, AocError> {
-    todo!("day 02 - part 1");
+pub fn process(input: &str) -> miette::Result<String, AocError> {
+    // let cubes = ((Color::Red, 12), (Color::Green, 13), (Color::Blue, 14));
+
+    let red = 12;
+    let green = 13;
+    let blue = 14;
+
+    let games = input
+        .lines()
+        .map(|line| {
+            parser::parse_game(line)
+                .map(|x| x.1)
+                .map_err(|_| AocError::ParseGameError(line.to_string()))
+        })
+        .collect::<Result<Vec<Game>, _>>()?;
+
+    let sum = games
+        .iter()
+        .filter(|game| {
+            game.rounds.iter().all(|&(n, color)| match color {
+                Color::Red => n <= red,
+                Color::Green => n <= green,
+                Color::Blue => n <= blue,
+            })
+        })
+        .map(|game| game.id)
+        .sum::<u32>();
+
+    Ok(sum.to_string())
 }
 
 #[cfg(test)]
@@ -68,9 +103,14 @@ mod tests {
         let expected = Game::new(
             13,
             vec![
-                vec![(7, Color::Blue), (8, Color::Red)],
-                vec![(5, Color::Green), (15, Color::Blue), (2, Color::Red)],
-                vec![(7, Color::Green), (3, Color::Blue), (12, Color::Red)],
+                (7, Color::Blue),
+                (8, Color::Red),
+                (5, Color::Green),
+                (15, Color::Blue),
+                (2, Color::Red),
+                (7, Color::Green),
+                (3, Color::Blue),
+                (12, Color::Red),
             ],
         );
         let (_, game) = parser::parse_game(input).into_diagnostic()?;
@@ -86,7 +126,9 @@ Game 2: 1 blue, 2 green; 3 green, 4 blue, 1 red; 1 green, 1 blue
 Game 3: 8 green, 6 blue, 20 red; 5 blue, 4 red, 13 green; 5 green, 1 red
 Game 4: 1 green, 3 red, 6 blue; 3 green, 6 red; 3 green, 15 blue, 14 red
 Game 5: 6 red, 1 blue, 3 green; 2 blue, 1 red, 2 green";
+
         assert_eq!("8", process(input)?);
+
         Ok(())
     }
 }
