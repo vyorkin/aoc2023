@@ -17,6 +17,15 @@ impl Game {
     pub fn new(id: u32, rounds: Vec<Vec<(u32, Color)>>) -> Self {
         Self { id, rounds }
     }
+
+    pub fn is_possible(&self, available_cubes: (u32, u32, u32)) -> bool {
+        let (red, green, blue) = available_cubes;
+        self.rounds.iter().flatten().all(|&(n, color)| match color {
+            Color::Red => n <= red,
+            Color::Green => n <= green,
+            Color::Blue => n <= blue,
+        })
+    }
 }
 
 mod parser {
@@ -52,15 +61,7 @@ mod parser {
 
 #[tracing::instrument]
 pub fn process(input: &str) -> miette::Result<String, AocError> {
-    let (red, green, blue) = (12, 13, 14);
-
-    let is_possible_game = |game: &Game| -> bool {
-        game.rounds.iter().flatten().all(|&(n, color)| match color {
-            Color::Red => n <= red,
-            Color::Green => n <= green,
-            Color::Blue => n <= blue,
-        })
-    };
+    let available_cubes = (12u32, 13u32, 14u32);
 
     let games = input
         .lines()
@@ -73,7 +74,7 @@ pub fn process(input: &str) -> miette::Result<String, AocError> {
 
     let sum = games
         .into_iter()
-        .filter(is_possible_game)
+        .filter(|game| game.is_possible(available_cubes))
         .map(|game| game.id)
         .sum::<u32>();
 
