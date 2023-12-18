@@ -1,9 +1,22 @@
 use crate::error::AocError;
 
-enum Game {
-    Single(u32),
-    Double(u32),
-    Triple(u32),
+#[derive(Debug, PartialEq, Clone)]
+enum Color {
+    Red,
+    Green,
+    Blue,
+}
+
+#[derive(Debug, PartialEq, Clone)]
+struct Game {
+    id: u32,
+    rounds: Vec<Vec<(u32, Color)>>,
+}
+
+impl Game {
+    pub fn new(id: u32, rounds: Vec<Vec<(u32, Color)>>) -> Self {
+        Self { id, rounds }
+    }
 }
 
 mod parser {
@@ -11,34 +24,29 @@ mod parser {
     use nom::{
         branch::alt,
         bytes::complete::tag,
-        character::complete::{digit1, space0, space1},
-        combinator::map_res,
-        multi::many1,
-        sequence::{delimited, preceded, terminated, tuple},
+        character::complete::{space0, u32},
+        combinator::{map_res, value},
+        multi::separated_list1,
+        sequence::{delimited, preceded, tuple},
         IResult,
     };
 
-    pub fn parse_game(input: &str) -> IResult<&str, u32> {
+    pub fn parse_game(input: &str) -> IResult<&str, Game, ()> {
         // Game 13: 7 blue, 8 red; 5 green, 15 blue, 2 red; 7 green, 3 blue, 12 red
 
-        // let color = alt((tag("red"), tag("green"), tag("blue")));
-        // let cubes = terminated(digit1, tuple((space0, color)));
-        // let comma = tag(", ");
-        // let round = tuple((cubes, comma, cubes, comma, cubes, tag(";"), space0));
+        let color = alt((
+            value(Color::Red, tag::<&str, &str, ()>("red")),
+            value(Color::Green, tag::<&str, &str, ()>("green")),
+            value(Color::Blue, tag::<&str, &str, ()>("blue")),
+        ));
 
-        let (remaining, game_id) =
-            map_res(delimited(tag("Game "), digit1, tag(": ")), |s: &str| {
-                s.parse::<u32>()
-            })(input)?;
-
-        // let (a, b) = many1(round)(remaining);
-
-        // let parse = (round, round, round);
-
-        //
-        // let result = parse(input);
-        // let result = result.map_res(|_| Game::Single(0))?;
-        Ok(("", 1))
+        let colored_cubes = tuple((u32, preceded(space0, color)));
+        let comma = tag(", ");
+        let colored_cubes_list = separated_list1(comma, colored_cubes);
+        let game_round = separated_list1(tag("; "), colored_cubes_list);
+        let game_id = delimited(tag("Game "), u32, tag(": "));
+        let game = tuple((game_id, game_round));
+        map_res(game, |(id, rounds)| Ok::<Game, ()>(Game::new(id, rounds)))(input)
     }
 }
 
@@ -49,15 +57,36 @@ pub fn process(_input: &str) -> miette::Result<String, AocError> {
 
 #[cfg(test)]
 mod tests {
+    use miette::IntoDiagnostic;
     use rstest::rstest;
 
     use super::*;
 
     #[test]
+    fn test_parser() -> miette::Result<()> {
+        let input = "Game 13: 7 blue, 8 red; 5 green, 15 blue, 2 red; 7 green, 3 blue, 12 red";
+        let expected = Game::new(
+            13,
+            vec![
+                vec![(7, Color::Blue), (8, Color::Red)],
+                vec![(5, Color::Green), (15, Color::Blue), (2, Color::Red)],
+                vec![(7, Color::Green), (3, Color::Blue), (12, Color::Red)],
+            ],
+        );
+        let (_, game) = parser::parse_game(input).into_diagnostic()?;
+        assert_eq!(game, expected);
+
+        Ok(())
+    }
+
+    #[test]
     fn test_process() -> miette::Result<()> {
-        todo!("haven't built test yet");
-        let input = "";
-        assert_eq!("", process(input)?);
+        let input = "Game 1: 3 blue, 4 red; 1 red, 2 green, 6 blue; 2 green
+Game 2: 1 blue, 2 green; 3 green, 4 blue, 1 red; 1 green, 1 blue
+Game 3: 8 green, 6 blue, 20 red; 5 blue, 4 red, 13 green; 5 green, 1 red
+Game 4: 1 green, 3 red, 6 blue; 3 green, 6 red; 3 green, 15 blue, 14 red
+Game 5: 6 red, 1 blue, 3 green; 2 blue, 1 red, 2 green";
+        assert_eq!("8", process(input)?);
         Ok(())
     }
 }

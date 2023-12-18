@@ -103,9 +103,8 @@ mod tests {
         bytes::complete::tag,
         character::complete::{digit1, space0, u32},
         combinator::{map_res, value},
-        multi::{many1, separated_list1},
-        sequence::{delimited, preceded, terminated, tuple},
-        IResult,
+        multi::separated_list1,
+        sequence::{delimited, preceded, tuple},
     };
 
     #[test]
@@ -123,22 +122,18 @@ mod tests {
     fn test_parse_rgb_color() -> miette::Result<()> {
         let input = "7 blue, 8 red; 5 green, 15 blue, 2 red; 7 green, 3 blue, 12 red";
 
-        fn parse_color(input: &str) -> IResult<&str, &str> {
-            tag("red")(input)
-        }
-
-        let color_parser = alt((
+        let color = alt((
             value(Color::Red, tag::<&str, &str, ()>("red")),
             value(Color::Green, tag::<&str, &str, ()>("green")),
             value(Color::Blue, tag::<&str, &str, ()>("blue")),
         ));
 
-        let colored_cubes = tuple((u32, preceded(space0, color_parser)));
+        let colored_cubes = tuple((u32, preceded(space0, color)));
         let comma = tag(", ");
-        let cubes_list = separated_list1(comma, colored_cubes);
-        let mut round_parser = separated_list1(tag("; "), cubes_list);
+        let colored_cubes_list = separated_list1(comma, colored_cubes);
+        let mut round_parser = separated_list1(tag("; "), colored_cubes_list);
 
-        let (remaining, cubes) = round_parser(input).into_diagnostic()?;
+        let (_remaining, cubes) = round_parser(input).into_diagnostic()?;
 
         assert_eq!(
             cubes,
@@ -156,7 +151,7 @@ mod tests {
     fn test_elve_game() -> miette::Result<()> {
         let input = "Game 13: 7 blue, 8 red; 5 green, 15 blue, 2 red; 7 green, 3 blue, 12 red";
 
-        let (remaining, game_id) = map_res(
+        let (_remaining, game_id) = map_res(
             delimited(tag("Game "), digit1::<&str, ()>, tag(": ")),
             |s: &str| s.parse::<u32>(),
         )(input)
