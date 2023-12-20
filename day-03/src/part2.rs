@@ -1,6 +1,5 @@
 use crate::error::AocError;
 use itertools::Itertools;
-use std::collections::BTreeMap;
 
 type CharMatrix = Vec<Vec<char>>;
 
@@ -21,13 +20,13 @@ impl EngineSchema {
     pub fn new(input: &str) -> Self {
         let result = input
             .lines()
-            .map(|line| format!(".{}.", line).chars().collect())
+            .map(|line| format!("{}.", line).chars().collect())
             .collect();
 
         Self(result)
     }
 
-    fn numbers(&self) -> BTreeMap<(usize, usize), u32> {
+    fn numbers(&self) -> Vec<((usize, usize), u32)> {
         self.0
             .iter()
             .enumerate()
@@ -51,7 +50,7 @@ impl EngineSchema {
                     })
                     .0
             })
-            .collect::<BTreeMap<(usize, usize), u32>>()
+            .collect()
     }
 
     fn gear_candidates(&self) -> Vec<(usize, usize)> {
@@ -65,11 +64,12 @@ impl EngineSchema {
                     .filter(|(_, &c)| Self::is_gear_marker(c))
                     .map(move |(j, _)| (i, j))
             })
-            .collect::<Vec<(usize, usize)>>()
+            .collect()
     }
 
-    pub fn gears(&self) -> Vec<u32> {
+    pub fn gear_ratios(&self) -> Vec<(u32, u32)> {
         let numbers = self.numbers();
+
         self.gear_candidates()
             .into_iter()
             .filter_map(|(i, j)| {
@@ -83,7 +83,7 @@ impl EngineSchema {
                         let adjacent =
                             numbers
                                 .iter()
-                                .fold(Vec::new(), |mut num_acc, (&(ni, nj), &n)| {
+                                .fold(Vec::new(), |mut num_acc, &((ni, nj), n)| {
                                     let num_length = n.to_string().len() as i32;
                                     let num_row = ni as i32;
                                     let num_col_start = nj as i32 - num_length;
@@ -105,12 +105,12 @@ impl EngineSchema {
                     .collect::<Vec<_>>();
 
                 if r.len() == 2 {
-                    Some(r.iter().product::<u32>())
+                    Some((r[0], r[1]))
                 } else {
                     None
                 }
             })
-            .collect::<Vec<u32>>()
+            .collect()
     }
 
     #[inline]
@@ -122,8 +122,9 @@ impl EngineSchema {
 #[tracing::instrument]
 pub fn process(input: &str) -> miette::Result<String, AocError> {
     let engine_schema = EngineSchema::new(input);
-    let gears = engine_schema.gears();
-    Ok(gears.iter().sum::<u32>().to_string())
+    let gear_ratios = engine_schema.gear_ratios();
+    let sum_of_gear_ratios = gear_ratios.into_iter().map(|(x, y)| x * y).sum::<u32>();
+    Ok(sum_of_gear_ratios.to_string())
 }
 
 #[cfg(test)]
