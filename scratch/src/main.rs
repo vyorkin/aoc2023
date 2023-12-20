@@ -108,8 +108,73 @@ mod tests {
     };
 
     #[test]
-    #[ignore]
-    fn test_nom_many_n_m() {}
+    fn test_split() {
+        #[derive(Debug, PartialEq, Copy, Clone)]
+        enum Cell {
+            Dot,
+            Digit(char),
+            Symbol(char),
+        }
+
+        impl From<char> for Cell {
+            fn from(value: char) -> Self {
+                if value.is_ascii_digit() {
+                    Cell::Digit(value)
+                } else if value == '.' {
+                    Cell::Dot
+                } else {
+                    Cell::Symbol(value)
+                }
+            }
+        }
+
+        impl Cell {
+            pub fn is_digit(&self) -> bool {
+                matches!(self, Cell::Digit(_))
+            }
+            pub fn is_symbol(&self) -> bool {
+                matches!(self, Cell::Symbol(_))
+            }
+        }
+
+        let input = "467..114..
+...*......
+..35..633.
+......#...
+617*......
+.....+.58.
+..592.....
+......755.
+...$.*....
+.664.598..";
+
+        let vec_of_numbers: Vec<(usize, usize, u32)> = input
+            .lines()
+            .enumerate()
+            .flat_map(|(row_ix, line)| {
+                line.chars()
+                    .enumerate()
+                    .fold((Vec::new(), None), |(mut acc, current), (col_ix, ch)| {
+                        if let Some(prev_digit) = current {
+                            if let Some(digit) = ch.to_digit(10) {
+                                let combined = prev_digit * 10 + digit;
+                                (acc, Some(combined))
+                            } else {
+                                acc.push((row_ix, col_ix - 1, prev_digit));
+                                (acc, None)
+                            }
+                        } else if let Some(digit) = ch.to_digit(10) {
+                            (acc, Some(digit))
+                        } else {
+                            (acc, None)
+                        }
+                    })
+                    .0
+            })
+            .collect();
+
+        dbg!(vec_of_numbers);
+    }
 
     #[derive(Debug, PartialEq, Clone)]
     enum Color {
