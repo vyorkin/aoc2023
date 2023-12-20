@@ -1,5 +1,3 @@
-#![allow(dead_code, unused_variables)]
-
 use crate::error::AocError;
 
 fn is_symbol(char: char) -> bool {
@@ -49,41 +47,14 @@ pub fn process(input: &str) -> miette::Result<String, AocError> {
         (1, 1),
     ];
 
-    // dbg!(numbers.clone());
-
-    let xs = numbers
+    let sum = numbers
         .into_iter()
         .filter(|&((i, j), n)| {
             offsets.iter().any(|&(row_offset, col_offset)| {
-                // 467..114..
-                // ...*......
-
-                // "467" - 3
-                // ((0, 2), 467)
-
-                // row = 0 + -1 = -1, col = 2 + -1 = 1 -> (-1, 1), (-1, -1)
-                // row = 0 + -1 = -1, col = 2 +  0 = 2 -> (-1, 2), (-1,  0)
-                // row = 0 + -1 = -1, col = 2 +  1 = 3 -> (-1, 3), (-1,  1)
-
-                // -d = -2
-
-                // row = 0 +  0 =  0, col = 2 + -1 = 1 -> (0, 1), (0, -1)
-                // row = 0 +  0 =  0, col = 2 +  1 = 3 -> (0, 3), (0,  1)
-
-                // row = 0 +  1 =  1, col = 2 + -1 = 1 -> (1, 1), (1, -1)
-                // row = 0 +  1 =  1, col = 2 +  0 = 2 -> (1, 2), (1,  0)
-                // row = 0 +  1 =  1, col = 2 +  1 = 3 -> (1, 3), (1,  1)
-
-                // xxxxX......
-                // x4x7x.114..
-                // xxxxX......
-
                 let num_digits = n.to_string().len();
-
                 [0, num_digits - 1].into_iter().any(|d| {
                     let row = i as i32 + row_offset;
                     let col = j as i32 + col_offset - d as i32;
-
                     matrix
                         .get(row as usize)
                         .and_then(|row| row.get(col as usize))
@@ -93,9 +64,9 @@ pub fn process(input: &str) -> miette::Result<String, AocError> {
             })
         })
         .map(|x| x.1)
-        .collect::<Vec<_>>();
+        .sum::<u32>();
 
-    Ok(xs.iter().sum::<u32>().to_string())
+    Ok(sum.to_string())
 }
 
 #[cfg(test)]
