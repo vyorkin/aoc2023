@@ -115,6 +115,13 @@ mod tests {
     }
 
     #[test]
+    fn test_vec_matrix() {
+        let matrix: Vec<Vec<u32>> = vec![vec![1, 2, 3], vec![4, 5, 6], vec![7, 8, 9]];
+
+        let a23 = matrix[1][2];
+    }
+
+    #[test]
     fn test_parse_rgb_color() -> miette::Result<()> {
         let input = "7 blue, 8 red; 5 green, 15 blue, 2 red; 7 green, 3 blue, 12 red";
 
