@@ -5,24 +5,21 @@ use crate::error::AocError;
 #[derive(Debug, PartialEq)]
 struct Card {
     id: u32,
-    chosen_numbers: HashSet<u32>,
-    winning_numbers: HashSet<u32>,
+    chosen: HashSet<u32>,
+    winning: HashSet<u32>,
 }
 
 impl Card {
     fn new(id: u32, chosen: &[u32], winning: &[u32]) -> Self {
         Self {
             id,
-            chosen_numbers: chosen.iter().cloned().collect(),
-            winning_numbers: winning.iter().cloned().collect(),
+            chosen: chosen.iter().cloned().collect(),
+            winning: winning.iter().cloned().collect(),
         }
     }
 
     fn points(&self) -> u32 {
-        let matches = self
-            .chosen_numbers
-            .intersection(&self.winning_numbers)
-            .count() as u32;
+        let matches = self.chosen.intersection(&self.winning).count() as u32;
 
         if matches > 0 {
             2u32.pow(matches - 1)
@@ -36,7 +33,6 @@ impl TryFrom<&str> for Card {
     type Error = AocError;
 
     fn try_from(input: &str) -> Result<Self, Self::Error> {
-        let xs = [1, 2, 3];
         parsing::parse_card(input)
     }
 }
@@ -44,7 +40,6 @@ impl TryFrom<&str> for Card {
 mod parsing {
     use super::*;
 
-    use miette::IntoDiagnostic;
     use nom::{
         bytes::complete::tag,
         character::complete::{space1, u32},

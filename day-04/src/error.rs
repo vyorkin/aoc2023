@@ -7,7 +7,7 @@ pub enum AocError {
     #[diagnostic(code(aoc::io_error))]
     IoError(#[from] std::io::Error),
 
-    #[error("cannot parse `{0}` as Card")]
-    #[diagnostic(code(aoc::parser_card_error))]
+    #[error("cannot parse `{0}` as Scratchard")]
+    #[diagnostic(code(aoc::parser_scratchcard_error))]
     ParseCardError(String),
 }
