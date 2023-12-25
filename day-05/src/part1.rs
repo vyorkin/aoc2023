@@ -121,10 +121,33 @@ humidity-to-location map:
     #[test]
     fn test_parse_almanac() -> miette::Result<()> {
         let parsed = parsing::parse_almanac(INPUT).into_diagnostic()?;
+        let expected = Almanac::new(
+            vec![79, 14, 55, 13],
+            vec![
+                vec![AlmanacMap::new(50, 98, 2), AlmanacMap::new(52, 50, 48)],
+                vec![
+                    AlmanacMap::new(0, 15, 37),
+                    AlmanacMap::new(37, 52, 2),
+                    AlmanacMap::new(39, 0, 15),
+                ],
+                vec![
+                    AlmanacMap::new(49, 53, 8),
+                    AlmanacMap::new(0, 11, 42),
+                    AlmanacMap::new(42, 0, 7),
+                    AlmanacMap::new(57, 7, 4),
+                ],
+                vec![AlmanacMap::new(88, 18, 7), AlmanacMap::new(18, 25, 70)],
+                vec![
+                    AlmanacMap::new(45, 77, 23),
+                    AlmanacMap::new(81, 45, 19),
+                    AlmanacMap::new(68, 64, 13),
+                ],
+                vec![AlmanacMap::new(0, 69, 1), AlmanacMap::new(1, 0, 69)],
+                vec![AlmanacMap::new(60, 56, 37), AlmanacMap::new(56, 93, 4)],
+            ],
+        );
 
-        assert_eq!(parsed.categories.len(), 7);
-        assert_eq!(parsed.seeds, vec![79, 14, 55, 13]);
-        assert_eq!(parsed, Almanac::new(vec![], vec![]));
+        assert_eq!(parsed, expected);
 
         Ok(())
     }
