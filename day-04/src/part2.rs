@@ -1,6 +1,4 @@
-use std::{collections::HashSet, ops::Range};
-
-use itertools::{unfold, Itertools};
+use std::collections::{BTreeMap, HashSet};
 
 use crate::error::AocError;
 
@@ -37,31 +35,16 @@ struct Card {
 }
 
 impl Card {
-    fn new(id: u32, chosen: &[u32], winning: &[u32]) -> Self {
+    fn new(id: u32, chosen: HashSet<u32>, winning: HashSet<u32>) -> Self {
         Self {
             id,
-            chosen: chosen.iter().cloned().collect(),
-            winning: winning.iter().cloned().collect(),
+            chosen,
+            winning,
         }
     }
 
-    pub fn winning(&self) -> usize {
-        self.chosen.intersection(&self.winning).count()
-    }
-
-    pub fn winning_cards_range(
-        &self,
-        start: usize,
-        number_of_cards: usize,
-    ) -> Option<Range<usize>> {
-        let winning = self.winning();
-        let end = start + winning;
-
-        if winning > 0 && end < number_of_cards {
-            Some(start..end)
-        } else {
-            None
-        }
+    pub fn number_of_matches(&self) -> u32 {
+        self.chosen.intersection(&self.winning).count() as u32
     }
 }
 
@@ -99,7 +82,9 @@ mod parsing {
         ));
 
         map_res(card, |(id, (chosen, winning))| {
-            let result = Card::new(id, &chosen, &winning);
+            let chosen = chosen.into_iter().collect();
+            let winning = winning.into_iter().collect();
+            let result = Card::new(id, chosen, winning);
             Ok::<Card, ()>(result)
         })(input)
     }
@@ -116,48 +101,33 @@ pub fn process(input: &str) -> miette::Result<String, AocError> {
     let cards = input
         .lines()
         .map(Card::try_from)
-        .rev()
         .collect::<Result<Vec<Card>, _>>()?;
 
-    let ids = unfold(
-        (cards.clone(), Vec::<Range<usize>>::new()),
-        |(original_cards, card_copies_ranges)| {
-            if let Some(card) = original_cards.pop() {
-                let mut card_ids = vec![card.id];
-                if let Some(range) = card.winning_cards_range(card.id as usize, cards.len()) {
-                    card_copies_ranges.push(range.clone());
-                    let card_copies = &cards[range];
-                    let copies_ids = card_copies.iter().map(|c| c.id);
-                    card_ids.extend(copies_ids);
-                }
-                Some(card_ids)
-            } else if let Some(card_copies_range) = card_copies_ranges.pop() {
-                let card_copies = &cards[card_copies_range.clone()];
-                let nested_copies_ranges = card_copies
-                    .iter()
-                    .filter_map(|c| c.winning_cards_range(c.id as usize, cards.len()))
-                    .collect::<Vec<_>>();
+    let copies = cards
+        .iter()
+        .map(|card| (card.id, 1))
+        .collect::<BTreeMap<u32, u32>>();
 
-                let nested_card_copies_ids = nested_copies_ranges
-                    .into_iter()
-                    .flat_map(|range| cards[range].iter().map(|c| c.id))
-                    .collect();
+    let total = cards
+        .iter()
+        .fold(copies, |mut acc, card| {
+            let number_of_cards = *acc.get(&card.id).unwrap();
 
-                Some(nested_card_copies_ids)
-            } else {
-                None
+            let from = card.id + 1;
+            let to = card.id + 1 + card.number_of_matches();
+
+            for copy_id in from..to {
+                acc.entry(copy_id).and_modify(|n| {
+                    *n += number_of_cards;
+                });
             }
-        },
-    )
-    .collect::<Vec<Vec<u32>>>();
 
-    let counts = ids.iter().flatten().counts();
+            acc
+        })
+        .values()
+        .sum::<u32>();
 
-    dbg!(counts.clone());
-
-    let sum = counts.values().sum::<usize>();
-
-    Ok(sum.to_string())
+    Ok(total.to_string())
 }
 
 #[cfg(test)]
@@ -169,29 +139,13 @@ mod tests {
     fn test_parse_scratchcard() -> miette::Result<()> {
         let input = "Card 1: 41 48 83 86 17 | 83 86  6 31 17  9 48 53";
         let parsed = Card::try_from(input)?;
-        let expected = Card::new(1, &[41, 48, 83, 86, 17], &[83, 86, 6, 31, 17, 9, 48, 53]);
+        let expected = Card::new(
+            1,
+            [41, 48, 83, 86, 17].into(),
+            [83, 86, 6, 31, 17, 9, 48, 53].into(),
+        );
 
         assert_eq!(parsed, expected);
-
-        Ok(())
-    }
-
-    #[test]
-    #[ignore]
-    fn test_winning_cards_range() -> miette::Result<()> {
-        let cards = vec![1, 2, 3, 4, 5, 6];
-
-        let input = "Card 1: 41 48 83 86 17 | 83 86  6 31 17  9 48 53";
-        let card = Card::try_from(input)?;
-        let winning = card.winning();
-        let range = card
-            .winning_cards_range(card.id as usize, cards.len())
-            .unwrap();
-        let slice = &cards[range.clone()];
-
-        assert_eq!(winning, 4);
-        assert_eq!(range, 1..5);
-        assert_eq!(slice, vec![2, 3, 4, 5]);
 
         Ok(())
     }
