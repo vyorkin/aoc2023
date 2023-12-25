@@ -1,8 +1,16 @@
-#![allow(dead_code)]
-
 use miette::{miette, Context, Diagnostic, IntoDiagnostic, LabeledSpan, SourceSpan};
 use semver::Version;
 use thiserror::Error;
+
+use nom::{
+    branch::alt,
+    bytes::complete::{tag, take_until, take_while},
+    character::complete::{alphanumeric1, digit1, line_ending, space0, space1, u32},
+    combinator::{map_res, value},
+    multi::{many1, separated_list1},
+    sequence::{delimited, preceded, terminated, tuple},
+    IResult,
+};
 
 #[allow(dead_code)]
 #[derive(Error, Debug, Diagnostic)]
@@ -94,18 +102,29 @@ fn main() -> miette::Result<()> {
     Ok(())
 }
 
+fn parse_maps(input: &str) -> IResult<&str, Vec<(u32, u32, u32)>> {
+    let map = tuple((terminated(u32, space1), terminated(u32, space1), u32));
+    let maps = separated_list1(line_ending, map);
+    let skip_line = preceded(
+        tuple((many1(alt((alphanumeric1, tag("-")))), tag(" map:"))),
+        line_ending,
+    );
+    preceded(skip_line, maps)(input)
+}
+
+fn parse_categories(input: &str) -> IResult<&str, Vec<Vec<(u32, u32, u32)>>> {
+    let map = tuple((terminated(u32, space1), terminated(u32, space1), u32));
+    let maps = separated_list1(line_ending, map);
+    let category_name = many1(alt((alphanumeric1, tag("-"))));
+    let skip_line = preceded(tuple((category_name, tag(" map:"))), line_ending);
+    let category = preceded(skip_line, maps);
+    separated_list1(tuple((line_ending, line_ending)), category)(input)
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;
     use itertools::unfold;
-    use nom::{
-        branch::alt,
-        bytes::complete::tag,
-        character::complete::{digit1, space0, u32},
-        combinator::{map_res, value},
-        multi::separated_list1,
-        sequence::{delimited, preceded, tuple},
-    };
 
     #[derive(Debug, PartialEq, Clone)]
     enum Color {
@@ -155,6 +174,57 @@ mod tests {
         .wrap_err("Unable to parse game")?;
 
         assert_eq!(game_id, 13);
+
+        Ok(())
+    }
+
+    #[test]
+    fn test_parse_sentence() -> miette::Result<()> {
+        fn parse_sentence(input: &str) -> IResult<&str, &str> {
+            terminated(take_until("."), take_while(|c| c == '.' || c == ' '))(input)
+        }
+
+        let input = "One two.
+Three four.";
+
+        let (remaining, sentence) = parse_sentence(input).into_diagnostic()?;
+
+        assert_eq!("One two", sentence);
+        assert_eq!("\nThree four.", remaining);
+
+        Ok(())
+    }
+
+    #[test]
+    fn test_parse_maps() -> miette::Result<()> {
+        let input = "seed-to-soil map:
+50 98 2
+52 50 48";
+
+        let (remaining, result) = parse_maps(input).into_diagnostic()?;
+
+        assert_eq!(result, vec![(50, 98, 2), (52, 50, 48)]);
+        assert_eq!(remaining, "");
+
+        Ok(())
+    }
+
+    #[test]
+    fn test_parse_categories() -> miette::Result<()> {
+        let input = "seed-to-soil map:
+50 98 2
+52 50 48
+
+soil-to-fertilizer map:
+0 15 37
+37 52 2
+39 0 15";
+
+        let (remaining, categories) = parse_categories(input).into_diagnostic()?;
+
+        assert_eq!(categories.len(), 2);
+        assert_eq!(categories.iter().flatten().count(), 5);
+        assert_eq!(remaining, "");
 
         Ok(())
     }
