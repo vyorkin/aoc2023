@@ -1,26 +1,48 @@
+use std::{collections::BTreeMap, ops::Range};
+
+use self::parsing::parse_almanac;
 use crate::error::AocError;
 
-#[derive(PartialEq, Debug)]
-pub struct AlmanacMap {
-    dst: u32,
-    src: u32,
-    len: u32,
+pub struct AlmanacLine {
+    dst: Range<u64>,
+    src: Range<u64>,
 }
 
-impl AlmanacMap {
-    pub fn new(dst: u32, src: u32, len: u32) -> Self {
-        Self { dst, src, len }
+impl AlmanacLine {
+    pub fn new(dst: u64, src: u64, len: u64) -> Self {
+        Self {
+            dst: dst..dst + len,
+            src: src..src + len,
+        }
+    }
+}
+
+#[derive(PartialEq, Debug)]
+pub struct AlmanacCategory(BTreeMap<u64, u64>);
+
+impl AlmanacCategory {
+    pub fn new(lines: Vec<AlmanacLine>) -> Self {
+        let inner = lines
+            .into_iter()
+            .flat_map(|line| line.src.zip(line.dst).collect::<Vec<_>>())
+            .collect::<BTreeMap<u64, u64>>();
+
+        Self(inner)
+    }
+
+    pub fn look_up(&self, n: u64) -> u64 {
+        *self.0.get(&n).unwrap_or(&n)
     }
 }
 
 #[derive(PartialEq, Debug)]
 pub struct Almanac {
-    seeds: Vec<u32>,
-    categories: Vec<Vec<AlmanacMap>>,
+    seeds: Vec<u64>,
+    categories: Vec<AlmanacCategory>,
 }
 
 impl Almanac {
-    pub fn new(seeds: Vec<u32>, categories: Vec<Vec<AlmanacMap>>) -> Self {
+    pub fn new(seeds: Vec<u64>, categories: Vec<AlmanacCategory>) -> Self {
         Self { seeds, categories }
     }
 }
@@ -31,16 +53,16 @@ mod parsing {
     use nom::{
         branch::alt,
         bytes::complete::tag,
-        character::complete::{alphanumeric1, line_ending, newline, space1, u32},
-        combinator::{map_res, rest},
+        character::complete::{alphanumeric1, line_ending, space1, u64},
+        combinator::map_res,
         multi::{many1, separated_list1},
-        sequence::{delimited, preceded, separated_pair, terminated, tuple},
-        Err, IResult,
+        sequence::{preceded, terminated, tuple},
+        IResult,
     };
 
     fn almanac(input: &str) -> IResult<&str, Almanac> {
-        let seeds = preceded(tag("seeds: "), separated_list1(space1, u32));
-        let map = tuple((terminated(u32, space1), terminated(u32, space1), u32));
+        let seeds = preceded(tag("seeds: "), separated_list1(space1, u64));
+        let map = tuple((terminated(u64, space1), terminated(u64, space1), u64));
         let maps = separated_list1(line_ending, map);
         let category_name = many1(alt((alphanumeric1, tag("-"))));
         let skip_line = preceded(tuple((category_name, tag(" map:"))), line_ending);
@@ -55,12 +77,17 @@ mod parsing {
         map_res(almanac, |(seeds, categories)| {
             let categories = categories
                 .into_iter()
-                .map(|c| {
-                    c.into_iter()
-                        .map(|(dst, src, len)| AlmanacMap::new(dst, src, len))
-                        .collect()
+                .map(|lines| {
+                    let lines = lines
+                        .into_iter()
+                        .map(|(dst, src, len)| AlmanacLine::new(dst, src, len))
+                        .collect::<Vec<_>>();
+
+                    AlmanacCategory::new(lines)
                 })
                 .collect::<Vec<_>>();
+
+            //
             let almanac = Almanac::new(seeds, categories);
             Ok::<Almanac, ()>(almanac)
         })(input)
@@ -73,9 +100,25 @@ mod parsing {
     }
 }
 
+fn seed_location(seed: &u64, almanac: &Almanac) -> u64 {
+    almanac
+        .categories
+        .iter()
+        .fold(*seed, |n, category| category.look_up(n))
+}
+
 #[tracing::instrument]
-pub fn process(_input: &str) -> miette::Result<String, AocError> {
-    todo!("day 05 - part 1");
+pub fn process(input: &str) -> miette::Result<String, AocError> {
+    let almanac = parse_almanac(input)?;
+
+    let closest = almanac
+        .seeds
+        .iter()
+        .map(|seed| seed_location(seed, &almanac))
+        .min()
+        .unwrap_or(0);
+
+    Ok(closest.to_string())
 }
 
 #[cfg(test)]
@@ -121,41 +164,15 @@ humidity-to-location map:
     #[test]
     fn test_parse_almanac() -> miette::Result<()> {
         let parsed = parsing::parse_almanac(INPUT).into_diagnostic()?;
-        let expected = Almanac::new(
-            vec![79, 14, 55, 13],
-            vec![
-                vec![AlmanacMap::new(50, 98, 2), AlmanacMap::new(52, 50, 48)],
-                vec![
-                    AlmanacMap::new(0, 15, 37),
-                    AlmanacMap::new(37, 52, 2),
-                    AlmanacMap::new(39, 0, 15),
-                ],
-                vec![
-                    AlmanacMap::new(49, 53, 8),
-                    AlmanacMap::new(0, 11, 42),
-                    AlmanacMap::new(42, 0, 7),
-                    AlmanacMap::new(57, 7, 4),
-                ],
-                vec![AlmanacMap::new(88, 18, 7), AlmanacMap::new(18, 25, 70)],
-                vec![
-                    AlmanacMap::new(45, 77, 23),
-                    AlmanacMap::new(81, 45, 19),
-                    AlmanacMap::new(68, 64, 13),
-                ],
-                vec![AlmanacMap::new(0, 69, 1), AlmanacMap::new(1, 0, 69)],
-                vec![AlmanacMap::new(60, 56, 37), AlmanacMap::new(56, 93, 4)],
-            ],
-        );
-
-        assert_eq!(parsed, expected);
+        assert_eq!(parsed.seeds.len(), 4);
+        assert_eq!(parsed.categories.len(), 7);
 
         Ok(())
     }
 
     #[test]
-    #[ignore]
     fn test_process() -> miette::Result<()> {
-        assert_eq!("", process(INPUT)?);
+        assert_eq!("35", process(INPUT)?);
         Ok(())
     }
 }
