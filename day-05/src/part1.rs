@@ -8,6 +8,11 @@ pub struct AlmanacLine {
     src: Range<u64>,
 }
 
+// seeds: 3416930225 56865175 4245248379 7142355 1808166864 294882110 863761171 233338109 4114335326 67911591 1198254212 504239157 3491380151 178996923 3965970270 15230597 2461206486 133606394 2313929258 84595688
+
+// dst        src        len
+// 3534435790 4123267198 50004089
+
 impl AlmanacLine {
     pub fn new(dst: u64, src: u64, len: u64) -> Self {
         Self {
@@ -126,6 +131,17 @@ mod tests {
     use miette::IntoDiagnostic;
 
     use super::*;
+
+    // dst_start src_start length
+    // xxx_start <= x < xxx_start + length
+    //
+    // 50 98 2:
+    // src: 98..(98 + 2) = 98 <= x < 100 = {98, 99}
+    // dst: 50..(50 + 2) = 50 <= x < 52  = {50, 51}
+    //
+    // 52 50 48:
+    // src: 50..(50 + 48) = 50 <= x < 98  = {50..97}
+    // dst: 52..(52 + 48) = 52 <= x < 100 = {52..99}
 
     const INPUT: &str = "seeds: 79 14 55 13
 
