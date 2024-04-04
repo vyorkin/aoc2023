@@ -7,7 +7,7 @@ default-members = ["day-*"]
 [workspace.dependencies]
 # error handling
 thiserror = "1.0"
-miette = { version = "5.10.0", features = ["fancy"] }
+miette = { version = "7.2.0", features = ["fancy"] }
 # tracing & logging
 tracing = "0.1"
 tracing-log = "0.2"
@@ -17,7 +17,7 @@ nom = "7.1"
 nom_locate = "4.2"
 nom-supreme = "0.8"
 # algo
-glam = "0.24"
+glam = "0.27"
 itertools = "0.12"
 petgraph = "0.6"
 # testing
