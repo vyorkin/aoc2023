@@ -1,11 +1,10 @@
-use std::{collections::BTreeMap, ops::Range};
-
 use self::parsing::parse_almanac;
 use crate::error::AocError;
 
 pub struct AlmanacLine {
-    dst: Range<u64>,
-    src: Range<u64>,
+    src: u64,
+    dst: u64,
+    len: u64,
 }
 
 // seeds: 3416930225 56865175 4245248379 7142355 1808166864 294882110 863761171 233338109 4114335326 67911591 1198254212 504239157 3491380151 178996923 3965970270 15230597 2461206486 133606394 2313929258 84595688
@@ -15,32 +14,35 @@ pub struct AlmanacLine {
 
 impl AlmanacLine {
     pub fn new(dst: u64, src: u64, len: u64) -> Self {
-        Self {
-            dst: dst..dst + len,
-            src: src..src + len,
+        Self { src, dst, len }
+    }
+
+    /// Maps n ∈ src to m ∈ dst, returns n if n ∉ src.
+    pub fn try_map(&self, n: u64) -> Option<u64> {
+        // m = 50 - 52 + n
+        // n = 53 => m = 2 + 53 = 55
+
+        if self.src <= n && n < self.src + self.len {
+            let m = (self.dst as i64 - self.src as i64) + n as i64;
+            Some(m as u64)
+        } else {
+            None
         }
     }
 }
 
-#[derive(PartialEq, Debug)]
-pub struct AlmanacCategory(BTreeMap<u64, u64>);
+pub struct AlmanacCategory(pub Vec<AlmanacLine>);
 
 impl AlmanacCategory {
     pub fn new(lines: Vec<AlmanacLine>) -> Self {
-        let inner = lines
-            .into_iter()
-            .flat_map(|line| line.src.zip(line.dst).collect::<Vec<_>>())
-            .collect::<BTreeMap<u64, u64>>();
-
-        Self(inner)
+        Self(lines)
     }
 
     pub fn look_up(&self, n: u64) -> u64 {
-        *self.0.get(&n).unwrap_or(&n)
+        self.0.iter().find_map(|line| line.try_map(n)).unwrap_or(n)
     }
 }
 
-#[derive(PartialEq, Debug)]
 pub struct Almanac {
     seeds: Vec<u64>,
     categories: Vec<AlmanacCategory>,
@@ -49,6 +51,16 @@ pub struct Almanac {
 impl Almanac {
     pub fn new(seeds: Vec<u64>, categories: Vec<AlmanacCategory>) -> Self {
         Self { seeds, categories }
+    }
+
+    fn seed_location(&self, seed: u64) -> u64 {
+        self.categories
+            .iter()
+            .fold(seed, |n, category| category.look_up(n))
+    }
+
+    pub fn locations(&self) -> impl Iterator<Item = u64> + '_ {
+        self.seeds.iter().map(|&seed| self.seed_location(seed))
     }
 }
 
@@ -105,23 +117,11 @@ mod parsing {
     }
 }
 
-fn seed_location(seed: &u64, almanac: &Almanac) -> u64 {
-    almanac
-        .categories
-        .iter()
-        .fold(*seed, |n, category| category.look_up(n))
-}
-
 #[tracing::instrument]
 pub fn process(input: &str) -> miette::Result<String, AocError> {
     let almanac = parse_almanac(input)?;
-
-    let closest = almanac
-        .seeds
-        .iter()
-        .map(|seed| seed_location(seed, &almanac))
-        .min()
-        .unwrap_or(0);
+    let locations = almanac.locations().collect::<Vec<_>>();
+    let closest = locations.iter().min().unwrap();
 
     Ok(closest.to_string())
 }
@@ -177,16 +177,17 @@ humidity-to-location map:
 60 56 37
 56 93 4";
 
-    #[test]
+    #[test_log::test]
     fn test_parse_almanac() -> miette::Result<()> {
         let parsed = parsing::parse_almanac(INPUT).into_diagnostic()?;
+
         assert_eq!(parsed.seeds.len(), 4);
         assert_eq!(parsed.categories.len(), 7);
 
         Ok(())
     }
 
-    #[test]
+    #[test_log::test]
     fn test_process() -> miette::Result<()> {
         assert_eq!("35", process(INPUT)?);
         Ok(())
