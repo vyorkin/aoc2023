@@ -1,5 +1,8 @@
+use indicatif::ProgressIterator;
+
 use self::parsing::parse_almanac;
 use crate::error::AocError;
+use std::ops::Range;
 
 pub struct AlmanacLine {
     src: u64,
@@ -44,13 +47,16 @@ impl AlmanacCategory {
 }
 
 pub struct Almanac {
-    seeds: Vec<u64>,
+    seed_ranges: Vec<Range<u64>>,
     categories: Vec<AlmanacCategory>,
 }
 
 impl Almanac {
-    pub fn new(seeds: Vec<u64>, categories: Vec<AlmanacCategory>) -> Self {
-        Self { seeds, categories }
+    pub fn new(seed_ranges: Vec<Range<u64>>, categories: Vec<AlmanacCategory>) -> Self {
+        Self {
+            seed_ranges,
+            categories,
+        }
     }
 
     fn seed_location(&self, seed: u64) -> u64 {
@@ -60,12 +66,16 @@ impl Almanac {
     }
 
     pub fn locations(&self) -> impl Iterator<Item = u64> + '_ {
-        let seeds_ranges = self
-            .seeds
-            .chunks(2)
-            .flat_map(|chunk| chunk[0]..(chunk[0] + chunk[1]));
+        let seeds = self
+            .seed_ranges
+            .iter()
+            .flat_map(|range| range.clone())
+            .collect::<Vec<_>>();
 
-        seeds_ranges.map(|seed| self.seed_location(seed))
+        seeds
+            .into_iter()
+            .progress()
+            .map(|seed| self.seed_location(seed))
     }
 }
 
@@ -109,7 +119,12 @@ mod parsing {
                 })
                 .collect::<Vec<_>>();
 
-            let almanac = Almanac::new(seeds, categories);
+            let seed_ranges = seeds
+                .chunks(2)
+                .map(|chunk| chunk[0]..(chunk[0] + chunk[1]))
+                .collect::<Vec<_>>();
+
+            let almanac = Almanac::new(seed_ranges, categories);
             Ok::<Almanac, ()>(almanac)
         })(input)
     }

@@ -16,8 +16,11 @@ nom.workspace = true
 nom-supreme.workspace = true
 # algo
 itertools.workspace = true
+rayon.workspace = true
 # profiling
 dhat.workspace = true
+# cli
+indicatif.workspace = true
 
 [dev-dependencies]
 criterion.workspace = true
