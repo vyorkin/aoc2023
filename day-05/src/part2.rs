@@ -193,7 +193,7 @@ humidity-to-location map:
     fn test_parse_almanac() -> miette::Result<()> {
         let parsed = parsing::parse_almanac(INPUT).into_diagnostic()?;
 
-        assert_eq!(parsed.seeds.len(), 4);
+        assert_eq!(parsed.seed_ranges.len(), 2);
         assert_eq!(parsed.categories.len(), 7);
 
         Ok(())
