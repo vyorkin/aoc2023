@@ -1,4 +1,4 @@
-use indicatif::ProgressIterator;
+use rayon::iter::{IntoParallelRefIterator, ParallelIterator};
 
 use self::parsing::parse_almanac;
 use crate::error::AocError;
@@ -65,17 +65,10 @@ impl Almanac {
             .fold(seed, |n, category| category.look_up(n))
     }
 
-    pub fn locations(&self) -> impl Iterator<Item = u64> + '_ {
-        let seeds = self
-            .seed_ranges
-            .iter()
-            .flat_map(|range| range.clone())
-            .collect::<Vec<_>>();
+    pub fn locations(&self) -> Vec<u64> {
+        let seeds = self.seed_ranges.par_iter().flat_map(|range| range.clone());
 
-        seeds
-            .into_iter()
-            .progress()
-            .map(|seed| self.seed_location(seed))
+        seeds.map(|seed| self.seed_location(seed)).collect()
     }
 }
 
@@ -139,7 +132,7 @@ mod parsing {
 #[tracing::instrument]
 pub fn process(input: &str) -> miette::Result<String, AocError> {
     let almanac = parse_almanac(input)?;
-    let locations = almanac.locations().collect::<Vec<_>>();
+    let locations = almanac.locations();
     let closest = locations.iter().min().unwrap();
 
     Ok(closest.to_string())
