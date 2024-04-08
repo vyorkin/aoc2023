@@ -6,4 +6,8 @@ pub enum AocError {
     #[error(transparent)]
     #[diagnostic(code(aoc::io_error))]
     IoError(#[from] std::io::Error),
+
+    #[error("cannot parse Sheet")]
+    #[diagnostic(code(aoc::parse_sheet_error))]
+    ParseSheetError,
 }
