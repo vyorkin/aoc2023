@@ -7,7 +7,7 @@ pub enum AocError {
     #[diagnostic(code(aoc::io_error))]
     IoError(#[from] std::io::Error),
 
-    #[error("cannot parse Almanac")]
-    #[diagnostic(code(aoc::parse_almanac_error))]
-    ParseAlmanacError,
+    #[error("cannot parse hands")]
+    #[diagnostic(code(aoc::parse_hands_error))]
+    ParseHandsError,
 }

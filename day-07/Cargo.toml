@@ -1,0 +1,39 @@
+[package]
+name = "day-07"
+version = "0.1.0"
+edition = "2021"
+
+[dependencies]
+# error handling
+thiserror.workspace = true
+miette.workspace = true
+# tracing & logging
+tracing.workspace = true
+tracing-subscriber.workspace = true
+tracing-log.workspace = true
+# parsing
+nom.workspace = true
+nom-supreme.workspace = true
+# algo
+itertools.workspace = true
+# profiling
+dhat.workspace = true
+
+[dev-dependencies]
+criterion.workspace = true
+divan.workspace = true
+rstest.workspace = true
+test-log.workspace = true
+
+[[bench]]
+name = "day-07-bench"
+path = "benches/benchmarks.rs"
+harness = false
+
+[[bench]]
+name = "day-07-bench-criterion"
+path = "benches/benchmarks-criterion.rs"
+harness = false
+
+[features]
+dhat-heap = []
