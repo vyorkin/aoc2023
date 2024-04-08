@@ -1,4 +1,4 @@
-#!/usr/bin/env cargo +nightly -Zscript
+#!/usr/bin/env rust-script
 
 //! ```cargo
 //! [package]

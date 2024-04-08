@@ -66,9 +66,11 @@ impl Almanac {
     }
 
     pub fn locations(&self) -> Vec<u64> {
-        let seeds = self.seed_ranges.par_iter().flat_map(|range| range.clone());
-
-        seeds.map(|seed| self.seed_location(seed)).collect()
+        self.seed_ranges
+            .par_iter()
+            .flat_map(|range| range.clone())
+            .map(|seed| self.seed_location(seed))
+            .collect()
     }
 }
 
